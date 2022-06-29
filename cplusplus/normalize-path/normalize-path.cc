@@ -1,5 +1,5 @@
 #define NAPI_DISABLE_CPP_EXCEPTIONS
-#include <D:\github\node-addon-api\napi.h>
+#include "napi.h"
 #include <stdlib.h>
 #include <stack>
 #include <vector>

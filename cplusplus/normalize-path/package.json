@@ -23,6 +23,7 @@
     "node-gyp": ">= 0.9.6"
   },
   "devDependencies": {
+    "@types/node": "^18.0.0",
     "node-addon-api": "^5.0.0"
   }
 }

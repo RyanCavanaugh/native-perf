@@ -2,34 +2,53 @@ const { normalizeSlashes, normalizePath } = require('./build/Release/normalize-p
 const relativePathSegmentRegExp = /(?:\/\/)|(?:^|\/)\.\.?(?:$|\/)/;
 const backslashRegExp = /\\/g; 
 
+const backslashCharCode = '\\'.charCodeAt(0);
+const forwardslashCharCode = '/'.charCodeAt(0);
 const iterations = 1_000_000;
 
+const testStrings = [
+    "D:/foo\\bar/bar\\qua",
+    "D:/foo",
+    "D:\\foo\\bar",
+    ".\\foo\\bar\\baz",
+    "/dev/null/null/null\\null\\null",
+    "/home/house/apartment/../foo/bar/../node_modules",
+    "\\home\\house\\apartment\\..\\foo\\bar\\..\\node_modules"
+];
 
+const normalizeSlashImps = [
+    ["Do Nothing", (_s) => ""],
+    ["Do Nothing (with body)", (_s) => {
+        _s = _s;
+        return _s;
+    }],
+    ["JS (buffer)", jsNormalizeSlashes_buffer],
+    ["JS (regex)", jsNormalizeSlashes_regex],
+    ["Native (string)", normalizePath],
+]
+
+/*
 let input = "D:/one\\two/../../three";
 console.log(`Input is [[${input}]]`);
-const output = normalizePath(input);
+const output = jsNormalizeSlashes_buffer(input);
 console.log(`Output is [[${output}]]`);
+*/
 
-let timer;
-
-for (let i = 0; i < 10; i++) {
-    // console.log("Input length is now " + input.length);
-    timer = timeIt("JS impl");
-    for (let n = 0; n < iterations; n++) {
-        const s = jsNormalizePath(input);
+function testImplementations(arr) {
+    for (const s of testStrings) {
+        console.log(`Input: "${s}"`);
+        for (const [name, impl] of arr) {
+            const timer = timeIt(`${name}`);
+            for (let i = 0; i < iterations; i++) {
+                impl(s);
+            }
+            timer.stop();
+        }
+        console.log();
     }
-    timer.stop();
-
-    timer = timeIt("Native impl");
-    for (let n = 0; n < iterations; n++) {
-        const s = normalizePath(input);
-    }
-    timer.stop();
-
-    console.log("");
-
-    // input = input + "abc\\defg\\hij\\klmno\\pqrst/"
 }
+
+testImplementations(normalizeSlashImps);
 
 function timeIt(s) {
     const now = Date.now();
@@ -40,7 +59,17 @@ function timeIt(s) {
     }
 }
 
-function jsNormalizeSlashes(path) {
+function jsNormalizeSlashes_buffer(path) {
+    const buffer = Buffer.from(path, "utf-8");
+    for (let i = 0; i < buffer.byteLength; i++) {
+        if (buffer[i] === backslashCharCode) {
+            buffer[i] = forwardslashCharCode;
+        }
+    }
+    return buffer.toString('utf-8');
+}
+
+function jsNormalizeSlashes_regex(path) {
     const index = path.indexOf("\\");
     if (index === -1) {
         return path;
@@ -50,7 +79,7 @@ function jsNormalizeSlashes(path) {
 }
 
 function jsNormalizePath(path) {
-    path = jsNormalizeSlashes(path);
+    path = jsNormalizeSlashes_regex(path);
     // Most paths don't require normalization
     if (!relativePathSegmentRegExp.test(path)) {
         return path;
