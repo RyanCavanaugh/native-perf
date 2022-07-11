@@ -19,6 +19,10 @@ Napi::String NormalizeSlashes(const Napi::CallbackInfo &info)
 
 Napi::String NormalizePath(const Napi::CallbackInfo &info)
 {
+  // DANGER
+  // This code fails on all kinds of inputs and should not be used in any production system
+  // DANGER
+
   Napi::String path = info[0].As<Napi::String>();
   std::u16string str = path.Utf16Value();
   std::stack<int> separatorPositions;
